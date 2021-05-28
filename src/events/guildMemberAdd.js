@@ -1,7 +1,10 @@
 const fs = require("fs");
 let captchas = JSON.parse(fs.readFileSync("data/captcha.json"));
+let config = JSON.parse(fs.readFileSync("data/config.json"));
 
 module.exports = member => {
+	if (!config.verification) return;
+
 	let captchaCode = (() => {
 		let a = "";
 		for (let i = 0; i < 6; i++) a += String.fromCharCode(65 + Math.floor(Math.random() * 26));
