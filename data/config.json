@@ -1,4 +1,6 @@
 {
 	"verification": true,
-	"prefix": "-!"
+	"prefix": "-!",
+	"lockdown": false,
+	"beta": true
 }
