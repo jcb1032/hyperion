@@ -1,38 +1,40 @@
 const fs = require("fs");
-let captchas = JSON.parse(fs.readFileSync("data/captcha.json"));
-let config = JSON.parse(fs.readFileSync("data/config.json"));
+const fetch = require("node-fetch");
 
+/**
+ * guildMemberAdd event - fired whenever a member joins a guild
+ * @param {object} member - Discord.JS GuildMember object
+ */
 module.exports = member => {
-	if (!config.verification) return;
-
-	let captchaCode = (() => {
-		let a = "";
-		for (let i = 0; i < 6; i++) a += String.fromCharCode(65 + Math.floor(Math.random() * 26));
-		return a;
-	})();
-
-	captchas[member.id] = captchaCode;
-	fs.writeFile("data/captcha.json", JSON.stringify(captchas, null, 1), console.error);
-
-	require("../tasks/canvas.js")(captchaCode).then(() => {
-		member.user.send({
-			embed: {
-				title: "**The Planet** Verification",
-				description: "Please reply to this message with the code above.",
-				footer: {
-					text: "This is a new feature we're trying out, so if you have any feedback, please feel free to let us know!",
+	let config = JSON.parse(fs.readFileSync("data/config.json"));
+	let verification = JSON.parse(fs.readFileSync("data/verification.json"));
+	if (config.lockdown) {
+		member.send("Sorry, The Planet is currently in lockdown due to a bot attack. Because of this, you have been kicked.\nIf you are human, we'd still love for you to join us!\nPlease try joining again in a few hours. https://discord.gg/na3gdy3\n\nThanks, ~ The Planet Team").then(m => {
+			member.kick({ reason: "lockdown" });
+			fetch(`https://discord.com/api/channels/${verification.modChannelID}/messages`, {
+				method: "post",
+				headers: {
+					Authorization: `Bot ${member.client.token}`,
+					"Content-Type": "application/json",
 				},
-			},
-			files: [
-				{
-					attachment: require("../tasks/tts.js")(captchaCode),
-					name: "captcha.mp3",
-				},
-				{
-					attachment: `./src/assets/captcha.png`,
-					name: "captcha.png",
-				},
-			],
+				body: JSON.stringify({
+					embed: {
+						author: {
+							name: member.user.tag,
+							icon_url: member.user.displayAvatarURL(),
+						},
+						fields: [
+							{ name: "Status", value: "KICKED", inline: true },
+							{ name: "Reason", value: "Lockdown", inline: true },
+						],
+						timestamp: new Date(),
+						footer: { text: `User ID: ${member.user.id}` },
+					},
+				}),
+			});
 		});
-	});
+		return;
+	}
+	if (!config.verification || config.beta) return;
+	require("../tasks/verify-start.js")(member);
 };
