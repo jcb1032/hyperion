@@ -1,22 +1,42 @@
 const canvas = require("canvas");
-const fs = require("fs");
-//canvas.registerFont("../assets/arial.ttf", { family: "Arial" });
 
-module.exports = code => {
-	return new Promise((res, rej) => {
-		let cvs = canvas.createCanvas(200, 100);
-		let context = cvs.getContext("2d");
+/**
+ * canvas.js - generates a captcha image
+ * @param {string} code - captcha text to display
+ * @returns Promise <PNG Image Buffer>
+ */
+module.exports = code =>
+	new Promise((res, rej) => {
+		let width = 300,
+			height = 150;
 
-		context.font = "bold 20pt arial";
-		context.textAlign = "center";
-		context.fillStyle = "#fff";
+		/* set up canvas */
+		let cvs = canvas.createCanvas(width, height);
+		let ctx = cvs.getContext("2d");
 
-		context.fillText(code, 100, 60);
+		/* draw background */
+		ctx.fillStyle = "black";
+		ctx.fillRect(0, 0, width, height);
 
-		let buffer = cvs.toBuffer("image/png");
-		fs.writeFile("./src/assets/captcha.png", buffer, err => {
-			if (err) rej();
-			else res();
-		});
+		/* draw random circles */
+		for (let i = 0; i < 150; i++) {
+			ctx.beginPath();
+			ctx.arc(Math.random() * width, Math.random() * height, 12, 0, 2 * Math.PI, false);
+
+			ctx.fillStyle = `rgba(150, 150, 150, .3)`;
+			ctx.fill();
+		}
+
+		/* set up text */
+		ctx.font = "bold 20pt arial";
+		ctx.textAlign = "center";
+		ctx.fillStyle = "#fff";
+
+		/* draw text */
+		ctx.translate(90 + Math.random() * 120, 85);
+		ctx.rotate((Math.PI / 180) * (Math.random() * 60 - 30));
+		ctx.fillText(code, 0, 0);
+
+		/* get and return image data */
+		res(cvs.toBuffer("image/png"));
 	});
-};
